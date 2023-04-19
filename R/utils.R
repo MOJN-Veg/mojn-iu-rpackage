@@ -14,7 +14,7 @@ pkg_globals <- new.env(parent = emptyenv())
 #' @return An AGOL authentication token
 #' @export
 #'
-getAGOLToken <- function(agol_username = "mojn_veg", agol_password = keyring::key_get(service = "AGOL", username = "mojn_veg"), root = "nps.maps.arcgis.com", referer = "https://irma.nps.gov") {
+fetchAGOLToken <- function(agol_username, agol_password = keyring::key_get(service = "AGOL", username = agol_username), root = "nps.maps.arcgis.com", referer = "https://irma.nps.gov") {
 
   url <- paste0("https://", root, "/sharing/rest/generateToken")
 
@@ -142,23 +142,24 @@ wrangleLayerMetadata <- function(raw_meta) {
     field_name <- field$attrlabl[[1]]
     desc <- parseAttrDef(field$attrdef[[1]])
     try({
-      desc$lookup <- list(lookup_name = field$attrdomv$codesetd$codesetn[[1]],
-                          lookup_url = field$attrdomv$codesetd$codesets[[1]])
+      desc$lookup <- list(lookup_name = trimws(field$attrdomv$codesetd$codesetn[[1]]),
+                          lookup_url = trimws(field$attrdomv$codesetd$codesets[[1]]))
     }, silent = TRUE)
     item_meta <- list()
     item_meta[[field_name]] <- desc
     return(item_meta)
   })
 
+  # simplify list
   fields <- purrr::flatten(fields)
 
   # Table level metadata
-  table_name <- raw_meta$eainfo$detailed[1]$enttyp$enttypl[[1]]
-  table_desc <- raw_meta$eainfo$detailed[1]$enttyp$enttypd[[1]]
+  table_name <- trimws(raw_meta$eainfo$detailed[1]$enttyp$enttypl[[1]])
+  table_desc <- trimws(raw_meta$eainfo$detailed[1]$enttyp$enttypd[[1]])
 
-  meta <- list()
-  meta[[table_name]][["table_description"]] <- table_desc
-  meta[[table_name]][["fields"]] <- fields
+  meta <- list(table_name = table_name,
+               table_description = table_desc,
+               fields = fields)
 
   return(meta)
 }
@@ -178,7 +179,7 @@ parseAttrDef <- function(def) {
     for (i in 1:length(starts)) {
         start <- starts[i] + 1
         end <- ends[i] - 1
-        name_value <- strsplit(substr(def, start, end), ":")[[1]]
+        name_value <- trimws(strsplit(substr(def, start, end), ":")[[1]])
         attrs[[name_value[1]]] <- name_value[2]
     }
   }
@@ -198,7 +199,7 @@ parseAttrDef <- function(def) {
 #' @return A list
 #' @export
 #'
-fetchFeatureService <- function(url, token) {
+fetchLayerAndTableList <- function(url, token) {
 
   qry <- list(f = "json")
 
@@ -213,5 +214,80 @@ fetchFeatureService <- function(url, token) {
   content <- httr::content(resp, type = "text/json", encoding = "UTF-8")
   feature_service <- jsonlite::fromJSON(content)
 
-  return(feature_service)
+  # Get layer id's and names
+  if (hasName(feature_service, "layers")) {
+    layers <- dplyr::select(feature_service$layers, id, name)
+  } else {
+    layers <- tibble::tibble(.rows = 0)
+  }
+
+  # Get table id's and names
+  if (hasName(feature_service, "tables")) {
+    tables <- dplyr::select(feature_service$tables, id, name)
+  } else {
+    tables <- tibble::tibble(.rows = 0)
+  }
+
+  layers_tables <- rbind(layers, tables)
+
+  return(layers_tables)
+}
+
+fetchRawIU <- function(iu_database_url = "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_Database/FeatureServer", agol_username = "mojn_veg", agol_password = keyring::key_get(service = "AGOL", username = agol_username)) {
+  token <- fetchAGOLToken(agol_username, agol_password)
+  layers_tables <- fetchLayerAndTableList(iu_database_url, token)
+  ids <- layers_tables$id
+  names(ids) <- layers_tables$name
+
+  metadata <- sapply(ids, function(id) {
+    meta <- fetchMetadata(iu_database_url, token, id)
+    meta[["table_id"]] <- id
+    return(meta)
+  }, simplify = FALSE, USE.NAMES = TRUE)
+
+  data <- sapply(metadata, function(meta){
+    data_table <- fetchAllRecords(iu_database_url, meta$table_id, token, outFields = paste(names(meta$fields), collapse = ",")) %>%
+      dplyr::select(dplyr::any_of(names(meta$fields)))
+    return(data_table)
+  }, simplify = FALSE, USE.NAMES = TRUE)
+
+  raw_data <- list(data = data,
+                   metadata = metadata)
+  return(raw_data)
+}
+
+setDataTypesFromMetadata <- function(raw_data) {
+  data <- sapply(names(raw_data$data), function(tbl_name) {
+    tbl <- raw_data$data[[tbl_name]]
+    meta <- raw_data$metadata[[tbl_name]]$fields
+    col_types <- sapply(meta, function(field) {
+      return(field$attributes$class)
+    }, simplify = TRUE, USE.NAMES = TRUE)
+    col_types <- unlist(col_types)
+    decimal <- names(col_types[col_types == "decimal"])
+    integer <- names(col_types[col_types == "integer"])
+    date <- names(col_types[col_types == "date"])
+    dateTime <- names(col_types[col_types == "dateTime"])
+    time <- names(col_types[col_types == "time"])
+    string <- names(col_types[col_types == "string"])
+    if (nrow(tbl) > 0) {
+      tbl <- dplyr::mutate(tbl,
+                         across(decimal, as.double),
+                         across(integer, as.integer),
+                         across(date, function(x) {as.POSIXct(x/1000, origin = "1970-01-01")}),
+                         across(dateTime, function(x) {as.POSIXct(x/1000, origin = "1970-01-01")}),
+                         across(time, function(x) {as.POSIXct(x/1000, origin = "1970-01-01")}),
+                         across(string, as.character))
+    }
+    return(tbl)
+  }, simplify = FALSE, USE.NAMES = TRUE)
+
+  raw_data$data <- data
+
+  return(raw_data)
+}
+
+wrangleIU <- function(raw_data) {
+  raw_data <- setDataTypesFromMetadata(raw_data)
+
 }
