@@ -289,5 +289,48 @@ setDataTypesFromMetadata <- function(raw_data) {
 
 wrangleIU <- function(raw_data) {
   raw_data <- setDataTypesFromMetadata(raw_data)
+  cols_to_remove <- c("objectid", "InstanceName", "^app_.*", "GapsKey")
+  id_replacement_names <- c("globalid", "objectid", "parentglobalid")
 
+  # Clean up data table columns
+  raw_data$data <- sapply(raw_data$data, function(tbl) {
+    # Fix case in id col names
+    global_id <- grepl("^globalid$", names(tbl), ignore.case = TRUE)
+    object_id <- grepl("^objectid$", names(tbl), ignore.case = TRUE)
+    parent_global_id <- grepl("^parentglobalid$", names(tbl), ignore.case = TRUE)
+    id_col_indices <- global_id & object_id & parent_global_id
+    replacement_names <- id_replacement_names[c(any(global_id), any(object_id), any(parent_global_id))]
+
+    names(tbl)[id_col_indices] <- replacement_names
+    remove <- names(tbl)[grepl(cols_to_remove, names(tbl))]
+    tbl <- tbl[, !remove]
+    return(tbl)
+  })
+
+  Site <- raw_data$data$Site
+  Visit <- raw_data$data$Visit
+  # LPI tables go here
+  Gaps_Canopy <- dplyr::left_join(dplyr::select(raw_data$data$Gaps, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
+                                  raw_data$data$Gaps_Canopy,
+                                  by = c("globalid" = "parentglobalid"))
+  Gaps_Basal <- dplyr::left_join(dplyr::select(raw_data$data$Gaps, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
+                                  raw_data$data$Gaps_Basal,
+                                  by = c("globalid" = "parentglobalid"))
+  Inventory <- dplyr::left_join(dplyr::select(raw_data$data$Inventory, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
+                                raw_data$data$Inventory_Species,
+                                by = c("globalid" = "parentglobalid"))
+  Frequency_Crust <- dplyr::left_join(dplyr::select(raw_data$data$Frequency, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
+                                raw_data$data$Frequency_Quadrats,
+                                by = c("globalid" = "parentglobalid"))
+  Frequency_Species <- dplyr::left_join(dplyr::select(raw_data$data$Frequency_Crust, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor", "Crust", "CrustPhotoName"))),
+                                        raw_data$data$FrequencySpecies,
+                                        by = c("globalid" = "parentglobalid"))
+  Density <- dplyr::left_join(dplyr::select(raw_data$data$Density, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
+                                      raw_data$data$Density_Species,
+                                      by = c("globalid" = "parentglobalid"))
+  SoilStability <- dplyr::left_join(dplyr::select(raw_data$data$SoilStability, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
+                                                       raw_data$data$SoilStability_Measurements,
+                                                       by = c("globalid" = "parentglobalid"))
+
+  # flattened_data <- list(data = list(Site = ))
 }
