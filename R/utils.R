@@ -323,7 +323,7 @@ wrangleIU <- function(raw_data) {
   flattened_data$data$Site <- raw_data$data$Site
   flattened_data$data$Visit <- raw_data$data$Visit
   flattened_data$data$PointIntercept_Surface <- dplyr::left_join(dplyr::select(raw_data$data$PointIntercept, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
-                                         dplyr::select(raw_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "SoilSurface", "PlantBase", "globalid", "parentglobalid")))),
+                                         dplyr::select(raw_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "SoilSurface", "PlantBase", "Disturbance", "globalid", "parentglobalid")))),
                                          by = c("globalid" = "parentglobalid"))
   flattened_data$data$PointIntercept_WoodyVegHeight <- dplyr::left_join(dplyr::select(raw_data$data$PointIntercept, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
                                               dplyr::select(raw_data$data$PointIntercept_LPI, -dplyr::any_of(dplyr::starts_with(c("Overstory", "Canopy", "Soil", "Disturbance", "Shrub", "PlantBase")))),
@@ -338,6 +338,8 @@ wrangleIU <- function(raw_data) {
     dplyr::rename(Species = Overstory) %>%
     dplyr::mutate(Layer = "overstory")
   names(lpi_overstory) <- stringr::str_remove(names(lpi_overstory), "^Overstory")
+  dplyr::mutate(lpi_overstory)
+
   lpi_canopy <- dplyr::left_join(dplyr::select(raw_data$data$PointIntercept, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
                                  dplyr::select(raw_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "Canopy", "globalid", "parentglobalid")))),
                                  by = c("globalid" = "parentglobalid")) %>%
