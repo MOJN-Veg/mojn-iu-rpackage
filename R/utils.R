@@ -338,7 +338,7 @@ wrangleIU <- function(raw_data) {
     dplyr::rename(Species = Overstory) %>%
     dplyr::mutate(Layer = "overstory")
   names(lpi_overstory) <- stringr::str_remove(names(lpi_overstory), "^Overstory")
-  dplyr::mutate(lpi_overstory)
+
 
   lpi_canopy <- dplyr::left_join(dplyr::select(raw_data$data$PointIntercept, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
                                  dplyr::select(raw_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "Canopy", "globalid", "parentglobalid")))),
@@ -366,7 +366,7 @@ wrangleIU <- function(raw_data) {
                                       by = c("globalid" = "parentglobalid"))
   flattened_data$data$Frequency_Species <- dplyr::left_join(dplyr::select(flattened_data$data$Frequency_Crust, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor", "Crust", "CrustPhotoName"))),
                                         raw_data$data$Frequency_Species,
-                                        by = c("globalid" = "parentglobalid"))
+                                        by = c("globalid.y" = "parentglobalid"))
   flattened_data$data$Density <- dplyr::left_join(dplyr::select(raw_data$data$Density, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
                               raw_data$data$Density_Species,
                               by = c("globalid" = "parentglobalid"))
