@@ -325,17 +325,17 @@ wrangleIU <- function(raw_data) {
                     dplyr::relocate(Park,Site,FieldSeason,VisitType,VisitDate,Recorder,Observer,SurveyReviewer,VisitNote,TriggerPreseasonAttention,Protocol,DeviceRepeatPhotos,DeviceLPIT1,DeviceLPIT2,DeviceLPIT3,DeviceGapsT1,DeviceGapsT2,DeviceGapsT3,
                     DeviceFrequency1,DeviceFrequency2,DeviceFrequency3, DeviceSeedlingDensity1,DeviceSeedlingDensity2,DeviceSeedlingDensity3,DeviceSaplingDensity2,DeviceTreeDensity,DeviceSoilStability,DeviceUnknowns,DeviceRebar,RebarNote,DPL,DPL_Note)
   flattened_data$data$PointIntercept_Surface <- dplyr::left_join(dplyr::select(raw_data$data$PointIntercept, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
-                                        dplyr::select(raw_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "SoilSurface", "PlantBase", "Disturbance", "globalid", "parentglobalid")))),
+                                        dplyr::select(raw_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "SoilSurface", "PlantBase", "Disturbance", "LPInotes", "globalid", "parentglobalid")))),
                                          by = c("globalid" = "parentglobalid")) %>%
-                                        dplyr::relocate(Park,Site,FieldSeason,VisitType,VisitDate,Transect,Meter,MeterNote,SoilSurface,SoilSurfaceShrub,SoilSurfacePlantBase,PlantBaseDead,PlantBaseSpeciesOther,PlantBaseUnkNumber,Disturbance,EndTime,LPIGeneralNotes,Recorder,Observer,ProofedBy)
+                                        dplyr::relocate(Park,Site,FieldSeason,VisitType,VisitDate,Transect,Meter,LPInotes,SoilSurface,SoilSurfaceShrub,SoilSurfacePlantBase,PlantBaseDead,PlantBaseSpeciesOther,PlantBaseUnkNumber,Disturbance,EndTime,LPIGeneralNotes,Recorder,Observer,ProofedBy)
   flattened_data$data$PointIntercept_WoodyVegHeight <- dplyr::left_join(dplyr::select(raw_data$data$PointIntercept, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
                                               dplyr::select(raw_data$data$PointIntercept_LPI, -dplyr::any_of(dplyr::starts_with(c("Overstory", "Canopy", "Soil", "Disturbance", "Shrub", "PlantBase")))),
                                               by = c("globalid" = "parentglobalid")) %>%
                                               dplyr::filter(Meter %% 5 == 0) %>%
-                                              dplyr::relocate(Park,Site,FieldSeason,VisitType,VisitDate,Transect,Meter,MeterNote,WoodyVegSpecies,WoodyVegDead,WoodyVegSpeciesOther,WoodyVegUnkNumber,WoodyVegHeight_m,EndTime,LPIGeneralNotes,Recorder,Observer,ProofedBy)
+                                              dplyr::relocate(Park,Site,FieldSeason,VisitType,VisitDate,Transect,Meter,LPInotes,WoodyVegSpecies,WoodyVegDead,WoodyVegSpeciesOther,WoodyVegUnkNumber,WoodyVegHeight_m,EndTime,LPIGeneralNotes,Recorder,Observer,ProofedBy)
 
   lpi_overstory <- dplyr::left_join(dplyr::select(raw_data$data$PointIntercept, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
-                                                dplyr::select(raw_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "Overstory", "globalid", "parentglobalid")))),
+                                                dplyr::select(raw_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "Overstory", "LPInotes", "globalid", "parentglobalid")))),
                                                 by = c("globalid" = "parentglobalid")) %>%
     dplyr::select(-dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor", "globalid"))) %>%
     dplyr::inner_join(raw_data$data$PointIntercept_Overstory, by = c("globalid.y" = "parentglobalid")) %>%
@@ -345,7 +345,7 @@ wrangleIU <- function(raw_data) {
 
 
   lpi_canopy <- dplyr::left_join(dplyr::select(raw_data$data$PointIntercept, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
-                                 dplyr::select(raw_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "Canopy", "globalid", "parentglobalid")))),
+                                 dplyr::select(raw_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "Canopy", "LPInotes", "globalid", "parentglobalid")))),
                                  by = c("globalid" = "parentglobalid")) %>%
     dplyr::select(-dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor", "globalid"))) %>%
     dplyr::inner_join(raw_data$data$PointIntercept_Canopy, by = c("globalid.y" = "parentglobalid")) %>%
@@ -355,7 +355,7 @@ wrangleIU <- function(raw_data) {
 
   flattened_data$data$PointIntercept_VegSpecies <- rbind(dplyr::select(lpi_overstory, intersect(names(lpi_canopy), names(lpi_overstory))),
                                      dplyr::select(lpi_canopy, intersect(names(lpi_canopy), names(lpi_overstory)))) %>%
-    dplyr::relocate(Park,Site,FieldSeason,VisitType,VisitDate,Transect,Meter,MeterNote,Count,Order,Layer,Material,Species,Dead,SpeciesOther,UnkNumber,DeadLabel,EndTime,LPIGeneralNotes,Recorder,Observer,ProofedBy)
+    dplyr::relocate(Park,Site,FieldSeason,VisitType,VisitDate,Transect,Meter,LPInotes,Count,Order,Layer,Material,Species,Dead,SpeciesOther,UnkNumber,DeadLabel,EndTime,LPIGeneralNotes,Recorder,Observer,ProofedBy)
 
   flattened_data$data$Gaps_Canopy <- dplyr::left_join(dplyr::select(raw_data$data$Gaps, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
                                   raw_data$data$Gaps_Canopy,
