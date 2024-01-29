@@ -137,6 +137,10 @@ wrangleMetadata <- function(raw_meta) {
 }
 
 wrangleLayerMetadata <- function(raw_meta, token) {
+  # Table level metadata
+  table_name <- trimws(raw_meta$eainfo$detailed[1]$enttyp$enttypl[[1]])
+  table_desc <- trimws(raw_meta$eainfo$detailed[1]$enttyp$enttypd[[1]])
+
   # Field level metadata
   fields <- lapply(raw_meta$eainfo$detailed[2:length(raw_meta$eainfo$detailed)], function(field) {
     field_name <- field$attrlabl[[1]]
@@ -156,10 +160,6 @@ wrangleLayerMetadata <- function(raw_meta, token) {
 
   # simplify list
   fields <- purrr::flatten(fields)
-
-  # Table level metadata
-  table_name <- trimws(raw_meta$eainfo$detailed[1]$enttyp$enttypl[[1]])
-  table_desc <- trimws(raw_meta$eainfo$detailed[1]$enttyp$enttypd[[1]])
 
   meta <- list(table_name = table_name,
                table_description = table_desc,
@@ -237,7 +237,7 @@ fetchLayerAndTableList <- function(url, token) {
   return(layers_tables)
 }
 
-fetchRawIU <- function(iu_database_url = "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_Database/FeatureServer", agol_username = "mojn_veg", agol_password = keyring::key_get(service = "AGOL", username = agol_username)) {
+fetchRawIU <- function(iu_database_url = "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_Database/FeatureServer", agol_username = "mojn_data", agol_password = keyring::key_get(service = "AGOL", username = agol_username)) {
   token <- fetchAGOLToken(agol_username, agol_password)
   layers_tables <- fetchLayerAndTableList(iu_database_url, token)
   ids <- layers_tables$id
@@ -412,7 +412,7 @@ formatMetadataAsEML <- function(meta, token) {
 fetchHostedCSV <- function(item_id, token, root = "nps.maps.arcgis.com") {
   url <- paste0("https://", root, "/sharing/rest/content/items/", item_id, "/data")
   resp <- httr::GET(url, query = list(token = token$token))
-  content <- httr::content(resp, type = "text/csv", encoding = "UTF-8")
+  content <- httr::content(resp, type = "text/csv", encoding = "UTF-8", show_col_types = FALSE)
 
   return(content)
 }
