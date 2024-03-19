@@ -45,6 +45,7 @@ fetchAndWrangleIU <- function(iu_urls = c("https://services1.arcgis.com/fBc8EJBx
   flattened_data$metadata$unknownPlant_Photo$table_name <- "unknownPlant_Photo"
 
 
+  # Create new tables
   flattened_data$data$PointIntercept_Surface <- dplyr::left_join(flattened_data$data$PointIntercept,
                                                                  # dplyr::left_join(dplyr::select(flattened_data$data$PointIntercept, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
                                                                  dplyr::select(flattened_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "SoilSurface", "PlantBase", "globalid", "parentglobalid")))),
@@ -77,6 +78,7 @@ fetchAndWrangleIU <- function(iu_urls = c("https://services1.arcgis.com/fBc8EJBx
   flattened_data$data$PointIntercept_VegSpecies <- rbind(dplyr::select(lpi_overstory, intersect(names(lpi_canopy), names(lpi_overstory))),
                                                          dplyr::select(lpi_canopy, intersect(names(lpi_canopy), names(lpi_overstory))))
 
+  # Join some general/site data to tables
   flattened_data$data$Gaps_Canopy <- dplyr::left_join(dplyr::select(flattened_data$data$Gaps, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
                                                       flattened_data$data$Gaps_Canopy,
                                                       by = c("globalid" = "parentglobalid"))
@@ -87,7 +89,7 @@ fetchAndWrangleIU <- function(iu_urls = c("https://services1.arcgis.com/fBc8EJBx
                                                     flattened_data$data$Inventory_Species,
                                                     by = c("globalid" = "parentglobalid"))
   flattened_data$data$Frequency_Crust <- dplyr::left_join(dplyr::select(flattened_data$data$Frequency, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
-                                                          flattened_data$data$Frequency_Quadrats,
+                                                          dplyr::select(flattened_data$data$Frequency_Quadrats,  -dplyr::any_of(c("globalid"))),
                                                           by = c("globalid" = "parentglobalid"))
   flattened_data$data$Frequency_Species <- dplyr::left_join(dplyr::select(flattened_data$data$Frequency_Crust, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor", "Crust", "CrustPhotoName"))),
                                                             flattened_data$data$Frequency_Species,
@@ -106,41 +108,39 @@ fetchAndWrangleIU <- function(iu_urls = c("https://services1.arcgis.com/fBc8EJBx
                                                          table_description = "Point Intercept Surface Table",
                                                          fields = flattened_data$metadata$PointIntercept$fields,
                                                          table_id = 1)
-  flattened_data$metadata$PointIntercept_Surface$fields <- append(PointIntercept_Surface$fields, flattened_data$metadata$PointIntercept_LPI$fields[c("Meter", "MeterNote", "SoilSurface", "SoilSurfaceShrub", "SoilSurfacePlantBase", "PlantBaseDead", "PlantBaseSpeciesOther", "PlantBaseUnkNumber", "parentglobalid")])
+  flattened_data$metadata$PointIntercept_Surface$fields <- append(flattened_data$metadata$PointIntercept_Surface$fields, flattened_data$metadata$PointIntercept_LPI$fields[c("Meter", "MeterNote", "SoilSurface", "SoilSurfaceShrub", "SoilSurfacePlantBase", "PlantBaseDead", "PlantBaseSpeciesOther", "PlantBaseUnkNumber", "parentglobalid")])
 
 
   flattened_data$metadata$PointIntercept_WoodyVegHeight <- list(table_name = "PointIntercept_WoodyVegHeight",
                                                          table_description = "Point Intercept Woody Vegetation Height Table",
                                                          fields = flattened_data$metadata$PointIntercept$fields,
                                                          table_id = 1)
-  flattened_data$metadata$PointIntercept_WoodyVegHeight$fields <- append(PointIntercept_WoodyVegHeight$fields, flattened_data$metadata$PointIntercept_LPI$fields[c("Meter", "MeterNote", "LPInotes", "EndMeter", "ReviewTableRow", "parentglobalid", "WoodyVegSpecies", "WoodyVegDead","WoodyVegSpeciesOther", "WoodyVegUnkNumber", "WoodyVegHeight_m")])
-
+  flattened_data$metadata$PointIntercept_WoodyVegHeight$fields <- append(flattened_data$metadata$PointIntercept_WoodyVegHeight$fields, flattened_data$metadata$PointIntercept_LPI$fields[c("Meter", "MeterNote", "LPInotes", "EndMeter", "ReviewTableRow", "parentglobalid", "WoodyVegSpecies", "WoodyVegDead","WoodyVegSpeciesOther", "WoodyVegUnkNumber", "WoodyVegHeight_m")])
 
   flattened_data$metadata$PointIntercept_VegSpecies <- list(table_name = "PointIntercept_VegSpecies",
-                                                                table_description = "Point Intercept Vegetation Species Table",
-                                                                fields = flattened_data$metadata$PointIntercept$fields,
-                                                                table_id = 1)
-  flattened_data$metadata$PointIntercept_VegSpecies$fields <- append(PointIntercept_VegSpecies$fields, flattened_data$metadata$PointIntercept_LPI$fields[c("Meter", "MeterNote", "LPInotes", "EndMeter", "ReviewTableRow", "parentglobalid", "WoodyVegSpecies", "WoodyVegDead","WoodyVegSpeciesOther", "WoodyVegUnkNumber", "WoodyVegHeight_m")])
+                                                            table_description = "Point Intercept Vegetation Species Table",
+                                                            fields = flattened_data$metadata$PointIntercept$fields,
+                                                            table_id = 1)
+  names(flattened_data$metadata$PointIntercept_VegSpecies$fields)[names(flattened_data$metadata$PointIntercept_VegSpecies$fields) == "globalid"] <- "globalid.y"
+  flattened_data$metadata$PointIntercept_VegSpecies$fields <- append(flattened_data$metadata$PointIntercept_VegSpecies$fields, flattened_data$metadata$PointIntercept_LPI$fields[c("Meter", "MeterNote", "OverstoryJoin", "OverstoryCount", "globalid")])
+  flattened_data$metadata$PointIntercept_VegSpecies$fields <- append(flattened_data$metadata$PointIntercept_VegSpecies$fields, flattened_data$metadata$PointIntercept_Overstory$fields[c("Overstory", "OverstoryOrder", "OverstoryDead", "OverstorySpeciesOther", "OverstoryUnkNumber", "OverstoryDeadLabel", "OverstoryConcat", "OverstoryDuplicates", "OverstoryMaterial")])
+  names(flattened_data$metadata$PointIntercept_VegSpecies$fields)[names(flattened_data$metadata$PointIntercept_VegSpecies$fields) == "Overstory"] <- "Species"
 
-  lpi_overstory <- dplyr::left_join(dplyr::select(flattened_data$data$PointIntercept, -dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor"))),
-                                    dplyr::select(flattened_data$data$PointIntercept_LPI, dplyr::any_of(dplyr::starts_with(c("Meter", "Overstory", "globalid", "parentglobalid")))),
-                                    by = c("globalid" = "parentglobalid")) %>%
-    dplyr::select(-dplyr::any_of(c("CreationDate", "Creator", "EditDate", "Editor", "globalid"))) %>%
-    dplyr::inner_join(flattened_data$data$PointIntercept_Overstory, by = c("globalid.y" = "parentglobalid")) %>%
-    dplyr::rename(Species = Overstory) %>%
-    dplyr::mutate(Layer = "overstory")
-
+  names(flattened_data$metadata$PointIntercept_VegSpecies$fields) <- stringr::str_remove(names(flattened_data$metadata$PointIntercept_VegSpecies$fields), "^Overstory")
+  # Creating metadata for new variable
+  flattened_data$metadata$PointIntercept_VegSpecies$fields <- append(flattened_data$metadata$PointIntercept_VegSpecies$fields, flattened_data$metadata$PointIntercept_VegSpecies$fields[2])
+  names(flattened_data$metadata$PointIntercept_VegSpecies$fields)[length(flattened_data$metadata$PointIntercept_VegSpecies$fields)] <- "Layer"
+  flattened_data$metadata$PointIntercept_VegSpecies$fields$Layer$description <- "Layer vegetation species came from"
 
 
   flattened_data$metadata$Frequency_Crust <- list(table_name = "Frequency_Crust",
                                                             table_description = "Frequency Crust Table",
                                                             fields = flattened_data$metadata$Frequency$fields,
                                                             table_id = 1)
-  flattened_data$metadata$Frequency_Crust$fields <- append(Frequency_Crust$fields, flattened_data$metadata$Frequency_Quadrats$fields)
+  flattened_data$metadata$Frequency_Crust$fields <- append(flattened_data$metadata$Frequency_Crust$fields, flattened_data$metadata$Frequency_Quadrats$fields[c("Meter", "MeterNote", "InvCount", "InvasiveJoin", "SpeciesJoin", "Disturbance","DisturbancePhotoName", "Crust", "CrustPhotoName", "QuadratNotes")])
 
   invisible(flattened_data)
 }
-
 
 #' Write IU data to CSV
 #'
