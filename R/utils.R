@@ -16,7 +16,6 @@ loadAndWrangleIU <- function(iu_urls = c("https://services1.arcgis.com/fBc8EJBxQ
                                            "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_UnknownPlant/FeatureServer",
                                            "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_RepeatPhotos/FeatureServer"),
                                      agol_username = "mojn_data", tables_to_remove = c("Site - DEPRACATED"), cols_to_remove = c("objectid", "InstanceName", "^app_.*", "GapsKey", "^Shrub.*")) {
-
   flattened_data <- list(data = list(),
                          metadata = list())
 
@@ -24,7 +23,7 @@ loadAndWrangleIU <- function(iu_urls = c("https://services1.arcgis.com/fBc8EJBxQ
   raw_data <- lapply(iu_urls, function(url){
     fetchagol::fetchRawData(url, agol_username)})
 
-  # TODO: Change this to apply??
+  # TODO: Change this to apply if possible
   # Add the tables in all the IU databases to one dataframe
   for(i in 1:length(raw_data)) {
     for(j in 1:length(raw_data[[i]])) {
