@@ -12,10 +12,11 @@ pkg_globals <- new.env(parent = emptyenv())
 
 # TODO: add variables that were joined to data tables to each metadata table
 loadAndWrangleIU <- function(iu_urls = c("https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_Database/FeatureServer",
-                                           "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_Site/FeatureServer",
-                                           "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_UnknownPlant/FeatureServer",
-                                           "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_RepeatPhotos/FeatureServer"),
-                                     agol_username = "mojn_data", tables_to_remove = c("Site - DEPRACATED"), cols_to_remove = c("objectid", "InstanceName", "^app_.*", "GapsKey", "^Shrub.*")) {
+                                         "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_Site/FeatureServer",
+                                         "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_UnknownPlant/FeatureServer",
+                                         "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_RepeatPhotos/FeatureServer",
+                                         "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/MOJN_IU_Logistics/FeatureServer"),
+                             agol_username = "mojn_data", tables_to_remove = c("Site - DEPRACATED"), cols_to_remove = c("objectid", "InstanceName", "^app_.*", "GapsKey", "^Shrub.*")) {
   flattened_data <- list(data = list(),
                          metadata = list())
 
@@ -25,11 +26,11 @@ loadAndWrangleIU <- function(iu_urls = c("https://services1.arcgis.com/fBc8EJBxQ
 
   # TODO: Change this to apply if possible
   # Add the tables in all the IU databases to one dataframe
-  for(i in 1:length(raw_data)) {
-    for(j in 1:length(raw_data[[i]])) {
-      for(k in 1:length(raw_data[[i]][[j]])) {
+  for (i in 1:length(raw_data)) {
+    for (j in 1:length(raw_data[[i]])) {
+      for (k in 1:length(raw_data[[i]][[j]])) {
         #if(names(raw_data[[i]][[j]])[[k]] != 'Site - DEPRACATED' & (!names(raw_data[[i]][[j]])[[k]] %in% cols_to_remove))
-          if(!names(raw_data[[i]][[j]])[[k]] %in% tables_to_remove)
+          if (!names(raw_data[[i]][[j]])[[k]] %in% tables_to_remove)
           # Add each table in data and metadata to new data frame
     flattened_data[[j]][[names(raw_data[[i]][[j]])[[k]]]] <- raw_data[[i]][[j]][[k]]
       }
