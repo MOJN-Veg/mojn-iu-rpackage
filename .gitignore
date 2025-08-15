@@ -1,2 +1,5 @@
 .Rproj.user
 .Rhistory
+temporary_demo_script.R
+*.csv
+temp_data_loading.R
